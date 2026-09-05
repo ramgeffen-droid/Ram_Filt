@@ -1,4 +1,4 @@
-// Flexible workout scheduling + always-visible workout plan
+// Flexible workout scheduling + previous-performance guidance
 state.scheduleOverrides = state.scheduleOverrides || {};
 save();
 
@@ -17,6 +17,24 @@ function workoutOptions(selectedId) {
     ).join("");
 }
 
+function previousPerformance(exerciseId, beforeDate = TODAY()) {
+  const dates = Object.keys(state.logs || {}).filter(d => d < beforeDate).sort().reverse();
+  for (const d of dates) {
+    const x = state.logs[d]?.workout?.[exerciseId];
+    if (x && (x.weight || x.reps)) return {date:d, ...x};
+  }
+  return null;
+}
+
+function previousLine(exerciseId) {
+  const p = previousPerformance(exerciseId);
+  if (!p) return `<div class="muted small" style="margin-top:5px">פעם קודמת: אין עדיין נתונים</div>`;
+  const parts=[];
+  if (p.weight) parts.push(`${esc(p.weight)} ק״ג`);
+  if (p.reps) parts.push(`${esc(p.reps)} חזרות`);
+  return `<div class="small" style="margin-top:5px"><strong>פעם קודמת:</strong> ${parts.join(" · ")} <span class="muted">(${p.date})</span></div>`;
+}
+
 function exerciseLogger(w) {
   if (!w) return `<div class="empty">אין אימון פעיל להיום. אפשר לבחור אחד למעלה.</div>`;
   const l = log();
@@ -24,8 +42,9 @@ function exerciseLogger(w) {
   <div class="stack">${w.exercises.map((e,n)=>{const x=l.workout[e.id]||{};return `
     <div class="exercise">
       <div class="row space"><strong>${n+1}. ${esc(e.name)}</strong><input class="check ex-check" data-ex="${e.id}" type="checkbox" ${x.done?"checked":""}></div>
-      <div class="muted small">${esc(e.target)}</div>
-      <div class="form-grid" style="margin-top:8px">
+      <div class="muted small">יעד: ${esc(e.target)}</div>
+      ${previousLine(e.id)}
+      <div class="form-grid" style="margin-top:9px">
         <input class="ex-weight" data-ex="${e.id}" type="number" step=".5" value="${x.weight||""}" placeholder="משקל ק״ג">
         <input class="ex-reps" data-ex="${e.id}" value="${x.reps||""}" placeholder="חזרות 12,12,10">
       </div>
@@ -57,7 +76,7 @@ renderWorkouts = function() {
           </div>
           <hr>
           <div class="stack">
-            ${w.exercises.map((e,n)=>`<div class="row space"><span><strong>${n+1}. ${esc(e.name)}</strong></span><span class="muted small">${esc(e.target)}</span></div>`).join("")}
+            ${w.exercises.map((e,n)=>`<div style="padding:3px 0"><div class="row space"><span><strong>${n+1}. ${esc(e.name)}</strong></span><span class="muted small">${esc(e.target)}</span></div>${previousLine(e.id)}</div>`).join("")}
           </div>
         </section>`).join("")}
     </div>`;
