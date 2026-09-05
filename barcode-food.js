@@ -1,4 +1,4 @@
-// Barcode food lookup using Open Food Facts.
+// Barcode food lookup using Open Food Facts, with grams or units.
 (function(){
   let foundProduct=null;
 
@@ -42,20 +42,62 @@
 
   function renderProduct(){
     const p=foundProduct, box=$('#productResult'); if(!p||!box)return;
-    const defaultGrams=p.serving||100;
+    const defaultUnitWeight=p.serving||0;
+    const defaultMode=defaultUnitWeight?"units":"grams";
     box.innerHTML=`<div class="history-item">
       <div class="row" style="align-items:flex-start">${p.image?`<img src="${esc(p.image)}" alt="" style="width:64px;height:64px;object-fit:contain;border-radius:8px">`:''}<div><strong>${esc(p.name)}</strong><div class="muted small">${esc(p.brands)}${p.servingText?` · מנה: ${esc(p.servingText)}`:''}</div><div class="small">ל-100 גרם: ${Math.round(p.protein100*10)/10} ג׳ חלבון · ${Math.round(p.kcal100)} קק״ל</div></div></div>
-      <div class="form-grid" style="margin-top:10px"><div><label>כמה אכלתי (גרם)</label><input id="productGrams" type="number" step="1" value="${defaultGrams}"></div><div><label>שעה</label><input id="productTime" type="time" value="${new Date().toTimeString().slice(0,5)}"></div></div>
+
+      <div style="margin-top:12px"><label>איך להזין?</label><select id="productMode"><option value="units" ${defaultMode==='units'?'selected':''}>יחידות / מנות</option><option value="grams" ${defaultMode==='grams'?'selected':''}>גרמים</option></select></div>
+
+      <div id="unitsBlock" style="margin-top:10px;${defaultMode==='units'?'':'display:none'}">
+        <div class="form-grid">
+          <div><label>כמה יחידות אכלתי?</label><input id="productUnits" type="number" step="0.1" value="1"></div>
+          <div><label>משקל ליחידה (גרם)</label><input id="unitWeight" type="number" step="0.1" value="${defaultUnitWeight||''}" placeholder="למשל 14.2"></div>
+        </div>
+        <div class="muted small" style="margin-top:6px">לקרקרים, חטיפים, פרוסות וכו'. אפשר לתקן את משקל היחידה לפי האריזה. לבוטנים/אגוזים עדיף בדרך כלל גרמים.</div>
+      </div>
+
+      <div id="gramsBlock" style="margin-top:10px;${defaultMode==='grams'?'':'display:none'}">
+        <div><label>כמה אכלתי (גרם)</label><input id="productGrams" type="number" step="1" value="100"></div>
+      </div>
+
+      <div style="margin-top:10px"><label>שעה</label><input id="productTime" type="time" value="${new Date().toTimeString().slice(0,5)}"></div>
       <div id="productCalculated" class="muted" style="margin-top:8px"></div>
       <button id="addScannedProduct" class="btn" style="margin-top:10px">הוסף למה שאכלתי היום</button>
       <div class="muted small" style="margin-top:8px">מקור: Open Food Facts. כדאי להשוות לתווית שעל האריזה אם הנתון נראה חריג.</div>
     </div>`;
-    const update=()=>{const g=Number($('#productGrams')?.value||0);$('#productCalculated').textContent=`${Math.round(p.protein100*g/10)/10} ג׳ חלבון · ${Math.round(p.kcal100*g/100)} קק״ל`;};
-    $('#productGrams').addEventListener('input',update);update();
+
+    function calc(){
+      const mode=$('#productMode').value;
+      let grams=0, label='';
+      if(mode==='units'){
+        const units=Number($('#productUnits').value||0), unitWeight=Number($('#unitWeight').value||0);
+        grams=units*unitWeight;
+        label=`${units} יח׳ × ${unitWeight||0} ג׳ = ${Math.round(grams*10)/10} ג׳`;
+      } else {
+        grams=Number($('#productGrams').value||0);
+        label=`${Math.round(grams*10)/10} ג׳`;
+      }
+      const protein=p.protein100*grams/100, kcal=p.kcal100*grams/100;
+      $('#productCalculated').textContent=`${label} · ${Math.round(protein*10)/10} ג׳ חלבון · ${Math.round(kcal)} קק״ל`;
+      return {grams,protein,kcal,mode};
+    }
+
+    $('#productMode').addEventListener('change',()=>{
+      const units=$('#productMode').value==='units';
+      $('#unitsBlock').style.display=units?'block':'none';
+      $('#gramsBlock').style.display=units?'none':'block';
+      calc();
+    });
+    ['productUnits','unitWeight','productGrams'].forEach(id=>$('#'+id)?.addEventListener('input',calc));
+    calc();
+
     $('#addScannedProduct').onclick=()=>{
-      const g=Number($('#productGrams').value||0); if(!g)return;
+      const c=calc(); if(!c.grams)return alert('צריך להזין כמות');
+      const units=Number($('#productUnits')?.value||0), unitWeight=Number($('#unitWeight')?.value||0);
+      const amountText=c.mode==='units'?`${units} יח׳ (${Math.round(c.grams*10)/10} גרם)`:`${Math.round(c.grams*10)/10} גרם`;
       log().manualMeals=log().manualMeals||[];
-      log().manualMeals.push({name:`${p.name} — ${g} גרם`,time:$('#productTime').value,p:p.protein100*g/100,k:p.kcal100*g/100,barcode:p.code,source:'Open Food Facts'});
+      log().manualMeals.push({name:`${p.name} — ${amountText}`,time:$('#productTime').value,p:c.protein,k:c.kcal,barcode:p.code,source:'Open Food Facts',quantityMode:c.mode,units:c.mode==='units'?units:null,unitWeight:c.mode==='units'?unitWeight:null,grams:c.grams});
       save();render();
     };
   }
