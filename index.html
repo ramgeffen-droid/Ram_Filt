@@ -7,20 +7,15 @@
   <title>Ram Fit</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <div>
-        <div class="eyebrow" id="todayDate"></div>
-        <h1>Ram Fit</h1>
-      </div>
+      <div><div class="eyebrow" id="todayDate"></div><h1>Ram Fit</h1></div>
       <button class="icon-btn" id="notifBtn" title="התראות">🔔</button>
     </header>
-
     <main id="view"></main>
-
     <nav class="bottom-nav">
       <button data-route="today" class="nav-btn active">🏠<span>היום</span></button>
       <button data-route="workouts" class="nav-btn">🏋️<span>אימונים</span></button>
@@ -29,11 +24,8 @@
       <button data-route="settings" class="nav-btn">⚙️<span>הגדרות</span></button>
     </nav>
   </div>
-
-  <template id="cardTpl">
-    <section class="card"></section>
-  </template>
-
+  <template id="cardTpl"><section class="card"></section></template>
   <script src="app.js"></script>
+  <script src="workout-flex.js"></script>
 </body>
 </html>
