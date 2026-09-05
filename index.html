@@ -20,8 +20,6 @@
   </style>
 </head>
 <body>
-  <div id="ramFitSplash"><div class="rf-splash-wrap"><img class="rf-splash-icon" src="icon-512.png" alt="Ram Fit"><span class="rf-eyelid rf-eye-left"></span><span class="rf-eyelid rf-eye-right"></span></div></div>
-  <script>setTimeout(()=>{const s=document.getElementById('ramFitSplash');if(s){s.classList.add('hide');setTimeout(()=>s.remove(),400)}},3000);</script>
   <div class="app-shell">
     <header class="topbar">
       <div><div class="eyebrow" id="todayDate"></div><h1>Ram Fit</h1></div>
@@ -38,6 +36,23 @@
   </div>
   <template id="cardTpl"><section class="card"></section></template>
   <script>
+    let lastSplashAt=0;
+    function showRamFitSplash(){
+      const now=Date.now();
+      if(now-lastSplashAt<3500)return;
+      lastSplashAt=now;
+      document.getElementById('ramFitSplash')?.remove();
+      const s=document.createElement('div');
+      s.id='ramFitSplash';
+      s.innerHTML='<div class="rf-splash-wrap"><img class="rf-splash-icon" src="icon-512.png" alt="Ram Fit"><span class="rf-eyelid rf-eye-left"></span><span class="rf-eyelid rf-eye-right"></span></div>';
+      document.body.appendChild(s);
+      setTimeout(()=>{s.classList.add('hide');setTimeout(()=>s.remove(),400)},3000);
+    }
+    const standalone=window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+    showRamFitSplash();
+    document.addEventListener('visibilitychange',()=>{if(standalone && document.visibilityState==='visible')showRamFitSplash();});
+    window.addEventListener('pageshow',()=>{if(standalone)showRamFitSplash();});
+
     if('serviceWorker' in navigator){
       let reloading=false;
       navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!reloading){reloading=true;location.reload()}});
