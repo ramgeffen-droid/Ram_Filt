@@ -12,89 +12,12 @@ workout = function(d = TODAY()) {
 
 function workoutOptions(selectedId) {
   return `<option value="rest" ${!selectedId ? "selected" : ""}>מנוחה היום</option>` +
-    Object.entries(state.workouts).map(([id,w]) =>
-      `<option value="${id}" ${selectedId===id?"selected":""}>${esc(w.name)}</option>`
-    ).join("");
+    Object.entries(state.workouts).map(([id,w]) => `<option value="${id}" ${selectedId===id?"selected":""}>${esc(w.name)}</option>`).join("");
 }
-
-function previousPerformance(exerciseId, beforeDate = TODAY()) {
-  const dates = Object.keys(state.logs || {}).filter(d => d < beforeDate).sort().reverse();
-  for (const d of dates) {
-    const x = state.logs[d]?.workout?.[exerciseId];
-    if (x && (x.weight || x.reps)) return {date:d, ...x};
-  }
-  return null;
-}
-
-function previousLine(exerciseId) {
-  const p = previousPerformance(exerciseId);
-  if (!p) return `<div class="muted small" style="margin-top:5px">פעם קודמת: אין עדיין נתונים</div>`;
-  const parts=[];
-  if (p.weight) parts.push(`${esc(p.weight)} ק״ג`);
-  if (p.reps) parts.push(`${esc(p.reps)} חזרות`);
-  return `<div class="small" style="margin-top:5px"><strong>פעם קודמת:</strong> ${parts.join(" · ")} <span class="muted">(${p.date})</span></div>`;
-}
-
-function exerciseLogger(w) {
-  if (!w) return `<div class="empty">אין אימון פעיל להיום. אפשר לבחור אחד למעלה.</div>`;
-  const l = log();
-  return `<div class="section-title"><h2>${esc(w.name)} — ביצוע היום</h2></div>
-  <div class="stack">${w.exercises.map((e,n)=>{const x=l.workout[e.id]||{};return `
-    <div class="exercise">
-      <div class="row space"><strong>${n+1}. ${esc(e.name)}</strong><input class="check ex-check" data-ex="${e.id}" type="checkbox" ${x.done?"checked":""}></div>
-      <div class="muted small">יעד: ${esc(e.target)}</div>
-      ${previousLine(e.id)}
-      <div class="form-grid" style="margin-top:9px">
-        <input class="ex-weight" data-ex="${e.id}" type="number" step=".5" value="${x.weight||""}" placeholder="משקל ק״ג">
-        <input class="ex-reps" data-ex="${e.id}" value="${x.reps||""}" placeholder="חזרות 12,12,10">
-      </div>
-    </div>`}).join("")}</div>
-    <button id="saveWorkout" class="btn" style="width:100%;margin-top:12px">שמור אימון</button>`;
-}
-
-renderWorkouts = function() {
-  const active = workout();
-  return `
-    <section class="card">
-      <h2>מה אני עושה היום?</h2>
-      <div class="muted" style="margin-bottom:10px">אפשר להזיז אימון יום קדימה/אחורה בלי לשנות את התוכנית הקבועה.</div>
-      <div class="row">
-        <select id="todayWorkoutSelect">${workoutOptions(active?.id)}</select>
-        <button class="btn" id="setTodayWorkout">עדכן היום</button>
-      </div>
-    </section>
-
-    ${exerciseLogger(active)}
-
-    <div class="section-title"><h2>כל תוכנית האימונים</h2></div>
-    <div class="stack">
-      ${Object.entries(state.workouts).map(([id,w])=>`
-        <section class="card">
-          <div class="row space">
-            <div><h3>${esc(w.name)}</h3><div class="muted small">${w.exercises.length} תרגילים</div></div>
-            ${active?.id===id?`<span class="tag success">היום</span>`:`<button class="btn secondary do-today" data-id="${id}">עשה היום</button>`}
-          </div>
-          <hr>
-          <div class="stack">
-            ${w.exercises.map((e,n)=>`<div style="padding:3px 0"><div class="row space"><span><strong>${n+1}. ${esc(e.name)}</strong></span><span class="muted small">${esc(e.target)}</span></div>${previousLine(e.id)}</div>`).join("")}
-          </div>
-        </section>`).join("")}
-    </div>`;
-};
-
-const baseBindFlex = bind;
-bind = function(r) {
-  baseBindFlex(r);
-  if (r !== "workouts") return;
-
-  $('#setTodayWorkout')?.addEventListener('click',()=>{
-    const v = $('#todayWorkoutSelect').value;
-    state.scheduleOverrides[TODAY()] = v === 'rest' ? 'rest' : v;
-    save(); render();
-  });
-
-  $$('.do-today').forEach(b=>b.addEventListener('click',()=>{
-    state.scheduleOverrides[TODAY()] = b.dataset.id;
-    save(); render();
-  }));
-};
+function previousPerformance(exerciseId,beforeDate=TODAY()){const dates=Object.keys(state.logs||{}).filter(d=>d<beforeDate).sort().reverse();for(const d of dates){const x=state.logs[d]?.workout?.[exerciseId];if(x&&(x.weight||x.reps))return{date:d,...x}}return null}
+function previousLine(exerciseId){const p=previousPerformance(exerciseId);if(!p)return`<div class="muted small" style="margin-top:5px">פעם קודמת: אין עדיין נתונים</div>`;const parts=[];if(p.weight)parts.push(`${esc(p.weight)} ק״ג`);if(p.reps)parts.push(`${esc(p.reps)} חזרות`);return`<div class="small" style="margin-top:5px"><strong>פעם קודמת:</strong> ${parts.join(" · ")} <span class="muted">(${p.date})</span></div>`}
+function exerciseLogger(w){if(!w)return`<div class="empty">אין אימון פעיל להיום. אפשר לבחור אחד למעלה.</div>`;const l=log();return`<div id="activeWorkout" class="section-title"><h2>${esc(w.name)} — ביצוע היום</h2></div><div class="stack">${w.exercises.map((e,n)=>{const x=l.workout[e.id]||{};return`<div class="exercise"><div class="row space"><strong>${n+1}. ${esc(e.name)}</strong><input class="check ex-check" data-ex="${e.id}" type="checkbox" ${x.done?"checked":""}></div><div class="muted small">יעד: ${esc(e.target)}</div>${previousLine(e.id)}<div class="form-grid" style="margin-top:9px"><input class="ex-weight" data-ex="${e.id}" type="number" step=".5" value="${x.weight||""}" placeholder="משקל ק״ג"><input class="ex-reps" data-ex="${e.id}" value="${x.reps||""}" placeholder="חזרות 12,12,10"></div></div>`}).join("")}</div><button id="saveWorkout" class="btn" style="width:100%;margin-top:12px">שמור אימון</button>`}
+renderWorkouts=function(){const active=workout();return`<section class="card"><h2>מה אני עושה היום?</h2><div class="muted" style="margin-bottom:10px">אפשר להזיז אימון יום קדימה/אחורה בלי לשנות את התוכנית הקבועה.</div><div class="row"><select id="todayWorkoutSelect">${workoutOptions(active?.id)}</select><button class="btn" id="setTodayWorkout">עדכן היום</button></div></section>${exerciseLogger(active)}<div class="section-title"><h2>כל תוכנית האימונים</h2></div><div class="stack">${Object.entries(state.workouts).map(([id,w])=>`<section class="card"><div class="row space"><div><h3>${esc(w.name)}</h3><div class="muted small">${w.exercises.length} תרגילים</div></div>${active?.id===id?`<span class="tag success">האימון של היום</span>`:`<button class="btn secondary do-today" data-id="${id}">התחל אימון</button>`}</div><hr><div class="stack">${w.exercises.map((e,n)=>`<div style="padding:3px 0"><div class="row space"><span><strong>${n+1}. ${esc(e.name)}</strong></span><span class="muted small">${esc(e.target)}</span></div>${previousLine(e.id)}</div>`).join("")}</div></section>`).join("")}</div>`};
+function scrollToActive(){requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById('activeWorkout')?.scrollIntoView({behavior:'smooth',block:'start'})))}
+const baseBindFlex=bind;
+bind=function(r){baseBindFlex(r);if(r!=="workouts")return;$('#setTodayWorkout')?.addEventListener('click',()=>{const v=$('#todayWorkoutSelect').value;state.scheduleOverrides[TODAY()]=v==='rest'?'rest':v;save();render();if(v!=='rest')scrollToActive()});$$('.do-today').forEach(b=>b.addEventListener('click',()=>{state.scheduleOverrides[TODAY()]=b.dataset.id;save();render();scrollToActive()}))};
