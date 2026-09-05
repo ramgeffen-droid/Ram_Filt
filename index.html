@@ -37,6 +37,21 @@
     </nav>
   </div>
   <template id="cardTpl"><section class="card"></section></template>
+  <script>
+    if('serviceWorker' in navigator){
+      let reloading=false;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!reloading){reloading=true;location.reload()}});
+      navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>{
+        reg.update();
+        setInterval(()=>reg.update(),5*60*1000);
+        if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
+        reg.addEventListener('updatefound',()=>{
+          const nw=reg.installing;
+          nw?.addEventListener('statechange',()=>{if(nw.state==='installed'&&navigator.serviceWorker.controller)nw.postMessage({type:'SKIP_WAITING'})});
+        });
+      }).catch(()=>{});
+    }
+  </script>
   <script src="app.js"></script>
   <script src="reminder-enhance.js"></script>
   <script src="workout-flex.js"></script>
